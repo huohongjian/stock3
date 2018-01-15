@@ -2,9 +2,11 @@
 # -*- coding:utf-8 -*-
 
 import sys, time, datetime, argparse
+import numpy as np
 import pandas as pd
 import tushare as ts
 from libs.Sqlite import Sqlite as db
+from libs import fetch
 from libs import tdate
 from tqdm import tqdm
 
@@ -18,16 +20,18 @@ def main(args):
 	if ps.command=='all':
 		all()
 	else:
-		dayly()
+#		update_kdata_ma()
+		daily()
 
 
 def all():
 	pass
 
 
-def dayly():
-	print('Fetching dayly data...')
-	fetch_k_data()
+def daily():
+	print('Perform daily operations')
+	fetch_day_all()
+	print('The daily operations have been completed.') 
 
 
 def monthly():
@@ -43,6 +47,14 @@ def fetch_trade_calendar():
 	df = ts.trade_cal()
 	df.to_sql('trade_cal', ENG, if_exists='replace')
 	print('is done! And saved data to table [trade_cal] success.')
+
+
+def fetch_concept_classified():
+	print("fetching concept classified data (概念分类)")
+	df = ts.get_concept_classified()
+	df.to_sql('concept', ENG, if_exists='replace')
+	print("Concept classified data is saved to [concept] table success.")
+
 
 												  
 def fetch_today_all():
@@ -121,54 +133,70 @@ def fetch_hist_data():
 	for r in res:
 		print(r)
 
+	
 
 
-def fetch_k_data():
-	codes = ['300347']
-	today = datetime.date.today()
-	startday = today - datetime.timedelta(days=500)
 
-	# 获取最新交易数据（全部股票）
-	sql = "INSERT INTO log (symbol, end) VALUES (?, ?)"
-	id = db.conn().exec(sql, ['fetch_to_log', now()]).cursor.lastrowid
+def fetch_day_all():
+	sql = "INSERT INTO log (message) VALUES (?)"
+	db.conn().exec(sql, ['crontab execute'])
+	print('exec program fetch.py though crontab.')
+	return
+
+
+	print('Fetching day_all... ', end='')
 	df = ts.get_day_all()
-	df = df.loc[df.price > 0]
-	df.to_sql('dayall', ENG, if_exists='replace')
-	sql = "UPDATE log SET start=? WHERE id=?"
-	db.conn().exec(sql, [now(), id])
-	return 
-	# 判断是否为今日的交易数据
+	df = df.loc[df.open > 0]
+#	df.to_sql('day_all', ENG, if_exists='replace')
+	print('is done! And saved data to table [dayall] success.')
 
 
+#	判断是否append to table [kdata]
+	sql = "SELECT max(date) FROM kdata"
+	maxDate = db.conn().val(sql) or '2018-01-01'
+	today = tdate.today()
+	time  = tdate.time()
+	nextTradeDay = tdate.nextTrade(maxDate)
 
-#		df = df.loc[df.price>0, ['code', 'price']]
+	if nextTradeDay == today and time < '15:50:00':
+		print('The data is newly, need no fetch and update.')
 
-	for code in codes:
-		sql = "SELECT date FROM kdata WHERE code=?"
-
-		df = ts.get_k_data(code, start=startday.strftime('%Y-%m-%d'))
-		df = df.set_index('date')
-
-
-		
+#	数据连续，可一次性下载当天全部交易数据
+	if nextTradeDay == today and time > '15:50:00':
+		df = df.loc[['code', 'open', 'price', 'high', 'low', 'volume']]
+		df = df.set_index('code')
+		df.insert(0, 'date', pd.Series([nextTradeDay], index=df.index))
+		df.rename(columns={'price':'close'}, inplace=True)
 		df.to_sql('kdata', ENG, if_exists='append')
+		print('At the same time, day_all data also saved to table [kdata] success.')
 
-
-	pass
-
-
-def now():
-	return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
+		codes = list(df.code)  #np.array(df[['code']]).tolist()
+		sql = "INSERT INTO log (operate, result, message) VALUES (?, ?, ?)"
+		db.conn().exec(sql, ['fetch_day_all', 'success', 'fetch and saveed stock data ,total=[{}]'.format(len(codes))])
 
 
 
-
-def fetch_concept_classified():
-	print("fetching concept classified data (概念分类)")
-	df = ts.get_concept_classified()
-	df.to_sql('concept', ENG, if_exists='replace')
-	print("Concept classified data is saved to [concept] table success.")
+def fetch_k_data(codes):
+	print('Fetching data through function named get_k_data(code)... ')
+	sql = "SELECT code, max(date) FROM kdata GROUP BY code"
+	dates = dict(db.conn().all(sql))
+	lastTradeDay = tdate.lastTrade(tdate.today())
+	errorCodes = []
+	pbar = tqdm(total=len(codes))
+	for code in codes:
+		pbar.set_description('[{}]'.format(code))
+		sDate = dates.get(code, '2017-01-01')
+		if sDate < lastTradeDay:
+			try:
+				df = ts.get_k_data(code, start=sDate)
+				df = df.set_index('date')
+				df.to_sql('kdata', ENG, if_exists='append')
+			except Exception as e:
+				print('[{}] some error raised:'.format(code), e)
+				errorCodes.append(code)
+		pbar.update(1)
+	pbar.close()
+	print('The data fetched and saved to table [kdata] success.')
 
 
 

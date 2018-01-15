@@ -10,6 +10,9 @@ from .Sqlite import Sqlite as db
 def now():
 	return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+def time():
+	return datetime.datetime.now().strftime('%H:%M:%S')
+
 def today():
 	return datetime.date.today().strftime('%Y-%m-%d')
 

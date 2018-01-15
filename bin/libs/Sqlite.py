@@ -5,6 +5,7 @@
 
 import sqlite3
 import os
+import pandas
 
 class Sqlite:
 	conns = {}
@@ -97,7 +98,14 @@ class Sqlite:
 		res = cls.one(sql, paras)
 		return res[0] if res else None
 
+	
+	@classmethod
+	def df(cls, sql, paras=[]):
+		res = cls.all(sql, paras)
+		return pandas.DataFrame(res, columns=cls.fields())
+
 
 	@classmethod
-	def description(cls):
-		return cls.cursor.description;
+	def fields(cls):
+		des = cls.cursor.description
+		return [x[0] for x in des]
