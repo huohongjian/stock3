@@ -35,3 +35,28 @@ def get_k_data(code, start='2017-01-01', remove=True):
 		df['va60'] = df.volume.rolling(window=60).mean().round()
 
 		df.to_sql('kdata', ENG, if_exists='append')
+
+
+def get_stock_basics():
+	print('Start fetching stock_basics... ', end='')
+	df = ts.get_stock_basics()
+	df.to_sql('stock_basics', ENG, if_exists='replace')
+	print('is done! And saved data to table [stock_basics] success.')
+
+def compute_ma(df):
+	df['ma5'] = df.close.rolling(window=5).mean().round(2)
+	df['ma10'] = df.close.rolling(window=10).mean().round(2)
+	df['ma20'] = df.close.rolling(window=20).mean().round(2)
+	df['ma30'] = df.close.rolling(window=30).mean().round(2)
+	df['ma60'] = df.close.rolling(window=60).mean().round(2)
+
+	df['va5'] = df.volume.rolling(window=5).mean().round()
+	df['va10'] = df.volume.rolling(window=10).mean().round()
+	df['va20'] = df.volume.rolling(window=20).mean().round()
+	df['va30'] = df.volume.rolling(window=30).mean().round()
+	df['va60'] = df.volume.rolling(window=60).mean().round()
+
+	return df.fillna(0)
+
+
+

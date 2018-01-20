@@ -3,7 +3,7 @@
 
 import os
 import importlib
-
+import readline
 
 def main():
 	dirname = os.path.dirname(os.path.abspath(__file__)) + os.path.sep
@@ -12,7 +12,7 @@ def main():
 		if INPUT == '':
 			continue
 		if INPUT in ['exit', 'e']:
-			exit()
+			return
 
 		i = INPUT.find(' ')
 		if i==-1:

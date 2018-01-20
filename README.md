@@ -24,5 +24,8 @@ crontab -l  	#显示用户crontab文件内容
 crontab -e		#编辑用户crontab文件内容
 0 16 * * mon-fri /home/hhj/stock3/bin/fetch.py
 
-
+## 解决方向键乱码问题
+sudo ln -s /usr/local/bin/bash /bin/bash	-- For FreeBSD
+sudo pip3 install readline
+import readline
 

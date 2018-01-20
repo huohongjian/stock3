@@ -7,6 +7,10 @@ import sqlite3
 import os
 import pandas
 
+'''
+return lastrowid: db.conn().exec(sql).cursor.lastrowid
+return rowcount:  db.conn().exec(sql)cursor.rowcount
+'''
 class Sqlite:
 	conns = {}
 	connect = None
@@ -51,9 +55,13 @@ class Sqlite:
 		if cls.showSQL:
 			print('SQL:[{}]\nPAS:{}'.format(sql,paras))
 
-		cls.cursor.executescript(script)
-		cls.commit(iscommit)
-		return cls
+		try:
+			cls.cursor.executescript(script)
+			cls.commit(iscommit)
+		except Exception as e:
+			print('SQL:[{}]\nPAS:{}\n{}'.format(sql, paras, e))
+		else:
+			return cls
 
 
 	@classmethod
@@ -61,9 +69,13 @@ class Sqlite:
 		if cls.showSQL:
 			print('SQL:[{}]\nPAS:{}'.format(sql,paras))
 
-		cls.cursor.executemany(sql, paras)
-		cls.commit(iscommit)
-		return cls
+		try:
+			cls.cursor.executemany(sql, paras)
+			cls.commit(iscommit)
+		except Exception as e:
+			print('SQL:[{}]\nPAS:{}\n{}'.format(sql, paras, e))
+		else:
+			return cls
 
 	
 	@classmethod
@@ -75,8 +87,7 @@ class Sqlite:
 			cls.cursor.execute(sql, paras)
 			cls.commit(iscommit)
 		except Exception as e:
-			print('SQL:[{}]\nPAS:{}'.format(sql,paras))
-			print(e)
+			print('SQL:[{}]\nPAS:{}\n{}'.format(sql, paras, e))
 		else:
 			return cls
 

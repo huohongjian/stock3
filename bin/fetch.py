@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# author: HuoHongJian
+# date: 2018-01-05
 # -*- coding:utf-8 -*-
 
 import sys, time, datetime, argparse
@@ -10,8 +12,6 @@ from libs import fetch
 from libs import tdate
 from tqdm import tqdm
 
-ENG = db.conn().connect
-
 
 def main(args):
 	parser = argparse.ArgumentParser(description='%(prog)s: fetch data and save into database')
@@ -20,9 +20,9 @@ def main(args):
 	if ps.command=='all':
 		all()
 	else:
-#		update_kdata_ma()
 		daily()
 
+#		fetch_stock_basics()
 
 def all():
 	pass
@@ -45,14 +45,14 @@ def yearly():
 def fetch_trade_calendar():
 	print('Fetching trade_calendar... ', end='')
 	df = ts.trade_cal()
-	df.to_sql('trade_cal', ENG, if_exists='replace')
+	df.to_sql('trade_cal', db.conn().connect, if_exists='replace')
 	print('is done! And saved data to table [trade_cal] success.')
 
 
 def fetch_concept_classified():
 	print("fetching concept classified data (概念分类)")
 	df = ts.get_concept_classified()
-	df.to_sql('concept', ENG, if_exists='replace')
+	df.to_sql('concept', db.conn().connect, if_exists='replace')
 	print("Concept classified data is saved to [concept] table success.")
 
 
@@ -60,14 +60,14 @@ def fetch_concept_classified():
 def fetch_today_all():
 	print('Fetching today_all... ')
 	df = ts.get_today_all()
-	df.to_sql('today_all', ENG, if_exists='replace')
+	df.to_sql('today_all', db.conn().connect, if_exists='replace')
 	print('is done! AND saved data to table [today_all] success.')
 
 
 def fetch_stock_basics():
 	print('Fetching stock_basics... ')
 	df = ts.get_stock_basics()
-	df.to_sql('stock_basics', ENG, if_exists='replace')
+	df.to_sql('stock_basics', db.conn().connect, if_exists='replace')
 	print('is done! And saved data to table [stock_basics] success')
 
 
@@ -138,17 +138,12 @@ def fetch_hist_data():
 
 
 def fetch_day_all():
-	sql = "INSERT INTO log (message) VALUES (?)"
-	db.conn().exec(sql, ['crontab execute'])
-	print('exec program fetch.py though crontab.')
-	return
-
-
 	print('Fetching day_all... ', end='')
 	df = ts.get_day_all()
 	df = df.loc[df.open > 0]
-#	df.to_sql('day_all', ENG, if_exists='replace')
-	print('is done! And saved data to table [dayall] success.')
+	df.to_sql('day_all', db.conn().connect, if_exists='replace')
+	codes = list(df.code)  #np.array(df[['code']]).tolist()
+	print('is done! And saved data to table [day_all] success.')
 
 
 #	判断是否append to table [kdata]
@@ -158,21 +153,35 @@ def fetch_day_all():
 	time  = tdate.time()
 	nextTradeDay = tdate.nextTrade(maxDate)
 
-	if nextTradeDay == today and time < '15:50:00':
-		print('The data is newly, need no fetch and update.')
-
-#	数据连续，可一次性下载当天全部交易数据
-	if nextTradeDay == today and time > '15:50:00':
-		df = df.loc[['code', 'open', 'price', 'high', 'low', 'volume']]
+#	数据连续,可一次性下载当天全部交易数据
+	if (nextTradeDay == today and time > '15:50:00'):
+		df = df[['code', 'open', 'price', 'high', 'low', 'volume']]
 		df = df.set_index('code')
 		df.insert(0, 'date', pd.Series([nextTradeDay], index=df.index))
 		df.rename(columns={'price':'close'}, inplace=True)
-		df.to_sql('kdata', ENG, if_exists='append')
+		df.to_sql('kdata', db.conn().connect, if_exists='append')
 		print('At the same time, day_all data also saved to table [kdata] success.')
 
-		codes = list(df.code)  #np.array(df[['code']]).tolist()
 		sql = "INSERT INTO log (operate, result, message) VALUES (?, ?, ?)"
-		db.conn().exec(sql, ['fetch_day_all', 'success', 'fetch and saveed stock data ,total=[{}]'.format(len(codes))])
+		db.conn().exec(sql, ['fetch_day_all', 'success', 'fetch and saveed the data to tables [day_all, kdata], total=[{}]'.format(len(codes))])
+
+		print('Starting compute moving average... ')
+		pbar = tqdm(total=len(codes))
+		for code in codes:
+			pbar.set_description('[{}]'.format(code))
+			sql = "SELECT id, close, volume FROM kdata WHERE code=? ORDER BY date DESC LIMIT 60"
+			rdf = db.conn().df(sql, [code]).sort_index(axis=0, ascending=False)
+			rdf = fetch.compute_ma(rdf)
+			r = rdf.iloc[-1]
+			sql = '''UPDATE kdata SET 
+				ma5=?, ma10=?, ma20=?, ma30=?, ma60=?,
+				va5=?, va10=?, va20=?, va30=?, va60=?
+				WHERE id=?'''
+			db.conn().exec(sql, [*r[3:].round(2), r.id])
+			pbar.update(1)
+		pbar.close()
+	else:
+		print('Save data to table [kdata] failed, Please execute the program at trade day and time > 16:00:00.')
 
 
 
@@ -190,7 +199,7 @@ def fetch_k_data(codes):
 			try:
 				df = ts.get_k_data(code, start=sDate)
 				df = df.set_index('date')
-				df.to_sql('kdata', ENG, if_exists='append')
+				df.to_sql('kdata', db.conn().connect, if_exists='append')
 			except Exception as e:
 				print('[{}] some error raised:'.format(code), e)
 				errorCodes.append(code)

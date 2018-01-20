@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+# -*- coding:utf-8
+# author: HuoHongJian
+# date: 2018-01-05
+
+import os, time, getpass, readline
+from ..Sqlite import Sqlite as db
+from .. import common as co
+
+def main(ps):
+	ps = {
+		'page': 1
+	}.update(ps={})
+	while True:
+		perform(ps)
+
+		I = input('stock-ss-jbm> ').strip()
+		if I == '':
+			ps['page'] += 1
+		elif I in ['exit', 'e']:
+			return
+		elif I in['.', 'help']:
+			help()
+			return
+
+
+def perform(ps):
+	print(ps)
+	ps['offset'] = (ps.get('page')-1) * 10
+	sql = "SELECT code, name from stock_basics LIMIT {offset}, 10".format(**ps)
+	
+	res = db.conn().all(sql)
+	for r in res:
+		print(r)
+	print()
+
+
+
+
+def help():
+	print('''
+This is help content:
+
+''')
+
+

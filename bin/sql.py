@@ -3,7 +3,7 @@
 # author: HuoHongJian
 # date: 2018-01-05
 
-import os, sys, time, argparse, getpass
+import os, sys, time, argparse, getpass, readline
 from libs.Sqlite import Sqlite as db
 
 

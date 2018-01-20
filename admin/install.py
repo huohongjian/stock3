@@ -18,6 +18,7 @@ def main(args):
 	ps = parser.parse_args(args)
 
 	create_tables()
+	fetch.get_stock_basics()
 	refresh_baseinfo_table()
 	fetch_trade_calendar()
 	fetch_k_data()
@@ -31,7 +32,6 @@ def create_tables():
 	db.conn().exes(c)
 	print('Create tables from /admin/stock.sql success.')
 
-	
 
 def append_baseinfo():
 	sql = "select code, name from today_all a where(select count(1) as num from baseinfo b where a.code=b.code)=0"
