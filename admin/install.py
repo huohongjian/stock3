@@ -12,7 +12,8 @@ import numpy	as np
 import tushare	as ts
 
 
-def main(args):
+def main(argString):
+	args = argString.split()
 	parser = argparse.ArgumentParser(description='%(prog)s: Init database')
 	parser.add_argument('command', nargs='?', help='stock code')
 	ps = parser.parse_args(args)
@@ -51,16 +52,17 @@ def refresh_baseinfo_table():
 
 	def update_baseinfo(df, field):
 		sql = "UPDATE baseinfo SET " + field + "=1 WHERE code=?"
-		css = np.array(df[['code']]).tolist()
+#		css = np.array(df[['code']]).tolist()
+		css = list(df.code)
 		db.conn().exem(sql, css)
 		print("is done! And update table [baseinfo] success.")
 
-	print("fetching sme's data (中小板)... ", end='')
-	update_baseinfo (ts.get_sme_classified(), 'issme')
-	print("fetching gem's data (创业板)... ", end='')
-	update_baseinfo (ts.get_gem_classified(), 'isgem')
-	print("fetching st's data (风险警示板)... ", end='')
-	update_baseinfo (ts.get_st_classified(),  'isst')
+#	print("fetching sme's data (中小板)... ", end='')
+#	update_baseinfo (ts.get_sme_classified(), 'issme')
+#	print("fetching gem's data (创业板)... ", end='')
+#	update_baseinfo (ts.get_gem_classified(), 'isgem')
+#	print("fetching st's data (风险警示板)... ", end='')
+#	update_baseinfo (ts.get_st_classified(),  'isst')
 #	print("fetching hs300's data (沪深300成份股)... ", end='')
 #	update_baseinfo (ts.get_hs300s(), 'ishs300')
 #	print("fetching sz50's data (上证50成份股权)... ", end='')
@@ -94,4 +96,4 @@ def fetch_k_data():
 
 
 if __name__=='__main__':
-	main(sys.argv[1:])
+	main(' '.join(sys.argv[1:]))

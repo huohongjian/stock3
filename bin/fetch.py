@@ -3,7 +3,7 @@
 # date: 2018-01-05
 # -*- coding:utf-8 -*-
 
-import sys, time, datetime, argparse
+import sys, time, datetime, argparse, random
 import numpy as np
 import pandas as pd
 import tushare as ts
@@ -13,7 +13,8 @@ from libs import tdate
 from tqdm import tqdm
 
 
-def main(args):
+def main(argString):
+	args = argString.split()
 	parser = argparse.ArgumentParser(description='%(prog)s: fetch data and save into database')
 	parser.add_argument('command', nargs='?', default='day', help='period choices=[add day] (default: day)')
 	ps = parser.parse_args(args)
@@ -138,8 +139,34 @@ def fetch_hist_data():
 
 
 def fetch_day_all():
-	print('Fetching day_all... ', end='')
-	df = ts.get_day_all()
+	print('Fetching day_all... ')
+
+#	判断是否为当天数据
+	for N in range(10):
+		df = ts.get_day_all()
+		size = df.shape[0]
+		loop = False
+		for i in range(3):
+			idx = random.randint(0, size-1)
+			_df = df.ix[idx]
+			sql = "SELECT open, close, high, low FROM kdata WHERE code=? ORDER BY date DESC LIMIT 1"
+			res = db.conn().one(sql, [_df.code])
+			if not any(res):
+				continue
+			if res[0] == _df.open and res[1]==_df.price and res[2]==_df.high and res[3]==_df.low:
+				loop = True
+				break
+		
+		if not loop:
+			break
+
+		if N > 8:
+			exit()
+		print('网上数据不是最新的，1个小时后，再次下载.')
+		time.sleep(3600)
+
+
+#	处理下载的数据
 	df = df.loc[df.open > 0]
 	df.to_sql('day_all', db.conn().connect, if_exists='replace')
 	codes = list(df.code)  #np.array(df[['code']]).tolist()
@@ -150,11 +177,11 @@ def fetch_day_all():
 	sql = "SELECT max(date) FROM kdata"
 	maxDate = db.conn().val(sql) or '2018-01-01'
 	today = tdate.today()
-	time  = tdate.time()
+	_time  = tdate.time()
 	nextTradeDay = tdate.nextTrade(maxDate)
 
 #	数据连续,可一次性下载当天全部交易数据
-	if (nextTradeDay == today and time > '15:50:00'):
+	if (nextTradeDay == today and _time > '15:50:00') or 1:
 		df = df[['code', 'open', 'price', 'high', 'low', 'volume']]
 		df = df.set_index('code')
 		df.insert(0, 'date', pd.Series([nextTradeDay], index=df.index))
@@ -212,4 +239,4 @@ def fetch_k_data(codes):
 
 
 if __name__ == '__main__':
-	main(sys.argv[1:])
+	main(' '.join(sys.argv[1:]))

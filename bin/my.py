@@ -4,15 +4,14 @@
 # date: 2018-01-05
 
 import os, time, getpass, readline
-from ..Sqlite import Sqlite as db
-from .. import common as co
+from libs.Sqlite import Sqlite as db
 
-def main(paras={}):
+def main(argString=''):
 	ps = {
 		'page': '1'
 	}
 
-	ps.update(paras)
+#	ps.update(paras)
 	offset = (int(ps.get('page', 1)) - 1) * 10
 	sql = "SELECT code, name from stock_basics LIMIT {offset}, 10"\
 		   .format(offset=offset, **ps)
@@ -32,4 +31,5 @@ This is help content:
 
 ''')
 
-
+if __name__ == '__main__':
+	main()

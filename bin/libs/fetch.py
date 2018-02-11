@@ -43,6 +43,7 @@ def get_stock_basics():
 	df.to_sql('stock_basics', ENG, if_exists='replace')
 	print('is done! And saved data to table [stock_basics] success.')
 
+
 def compute_ma(df):
 	df['ma5'] = df.close.rolling(window=5).mean().round(2)
 	df['ma10'] = df.close.rolling(window=10).mean().round(2)
@@ -55,6 +56,11 @@ def compute_ma(df):
 	df['va20'] = df.volume.rolling(window=20).mean().round()
 	df['va30'] = df.volume.rolling(window=30).mean().round()
 	df['va60'] = df.volume.rolling(window=60).mean().round()
+
+#	df['pc'] = df['price'].diff(periods=1, axis=0)
+#	df['pcr'] = df['pc']/df['price']*100
+#	df['vc'] = df['volume'].diff(periods=1, axis=0)
+#	df['vcr'] = df['vc']/df['volume']*100
 
 	return df.fillna(0)
 

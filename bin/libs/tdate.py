@@ -31,6 +31,14 @@ def nextTrade(day=today()):
 	sql = "SELECT calendarDate FROM trade_cal WHERE calendarDate>? AND isOpen=1 ORDER BY calendarDate LIMIT 1"
 	return db.conn().val(sql, [day])
 
-def lastTrade(day=today()):
-	sql = "SELECT calendarDate FROM trade_cal WHERE calendarDate<? AND isOpen=1 ORDER BY calendarDate DESC LIMIT 1"
+def lastTrade(day=today(), includeToday=False):
+	if includeToday:
+		sql = "SELECT calendarDate FROM trade_cal WHERE calendarDate<=? AND isOpen=1 ORDER BY calendarDate DESC LIMIT 1"
+	else:
+		sql = "SELECT calendarDate FROM trade_cal WHERE calendarDate<? AND isOpen=1 ORDER BY calendarDate DESC LIMIT 1"
 	return db.conn().val(sql, [day])
+
+
+def max():
+	sql = "SELECT max(date) FROM kdata"
+	return db.conn().val(sql)

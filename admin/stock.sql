@@ -74,6 +74,33 @@ CREATE INDEX IF NOT EXISTS `ix_hist_date`	ON `hist` (`date`, `curve`);
 CREATE INDEX IF NOT EXISTS `ix_hist_code`	ON `hist` (`code`, `curve`);
 
 
+DROP TABLE IF EXISTS `ndata`;
+CREATE TABLE IF NOT EXISTS `ndata` (
+	`id`		integer PRIMARY KEY autoincrement,
+	`date`		varchar(32),
+	`code`		varchar(32),
+	`changepercent`	real,
+	`trade`			real,
+	`open`			real,
+	`high`			real,
+	`low`			real,
+	`settlement`	real,
+	`volume`		real,
+	`turnoverratio`	real,
+	`amount`		real,
+	`per`			real,
+	`pb`			real,
+	`mktcap`		real,
+	`nmc`			real,
+
+	`start`		varchar(32),
+	`mhdate`	varchar(32),
+	`maxhigh`	real,
+	`mldate`	varchar(32),
+	`minlow`	real,
+
+);
+
 
 DROP TABLE IF EXISTS `kdata`;
 CREATE TABLE IF NOT EXISTS `kdata` (
@@ -85,6 +112,11 @@ CREATE TABLE IF NOT EXISTS `kdata` (
 	`high`		real,
 	`low`		real,
 	`volume`	real,
+
+	`pc`		real,
+	`pcr`		real,
+	`vc`		real,
+	`vcr`		real,
 
 	`ma5`		real,
 	`ma10`		real,
@@ -98,8 +130,8 @@ CREATE TABLE IF NOT EXISTS `kdata` (
 	`va30`		real,
 	`va60`		real,
 
-	`top`		integer default 0,
-	`bottom`	integer default 0
+	`istop`		integer,
+	`isbottom`	integer
 );
 CREATE INDEX IF NOT EXISTS `ix_kdata_date`	ON `kdata` (`date`);
 CREATE INDEX IF NOT EXISTS `ix_kdata_code`	ON `kdata` (`code`, `date`);

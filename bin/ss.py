@@ -4,11 +4,15 @@
 # date: 2018-01-05
 
 import re, os, sys, time, argparse, getpass, readline, importlib
+import pandas as pd
 from libs.Sqlite import Sqlite as db
-from libs import common as co
+#from libs import common as co
+from libs import cache
 
 
 def main(args):
+	pd.set_option('display.width', 1366)
+
 	parser = argparse.ArgumentParser(description='%(prog)s: Execute Structured Query Language')
 	parser.add_argument('commands', nargs='*', default='jbm', help='Execute filename [command.py]')
 	ps = parser.parse_args(args)
@@ -52,23 +56,30 @@ def main(args):
 			I = cmd + ' asc:True'
 		elif I in ('desc', 'd'):
 			I = cmd + ' asc:False'
-		elif I in ('r'):
+		elif I in ('rerender', 'r'):
 			I = cmd
+		elif I in ('save', 's'):
+			cache.save(cmd)
+			continue
+		elif I in ('list', 'l'):
+			cache.cache()
+			continue
 
 
 		i = (I + ' ').find(' ')
-		cmd, paraString = I[:i], I[i:]
+		_cmd, paraString = I[:i], I[i:]
+			
+		if modCache.get(_cmd) is None:
+			if os.path.isfile(dirname + _cmd + '.py'):
+				modCache[_cmd] = importlib.import_module('libs.select.' + _cmd)
+			else:
+				print('Command error, please input again.', 'No {}.py file'.format(_cmd))
+				continue
+		
+		cmd = _cmd
 		if params.get(cmd) is None:
 			params[cmd] = {}
 		params[cmd].update(parseParameter(paraString))
-			
-		if modCache.get(cmd) is None:
-			if os.path.isfile(dirname + cmd + '.py'):
-				modCache[cmd] = importlib.import_module('libs.select.' + cmd)
-			else:
-				print('Command error, please input again.', 'No {}.py file'.format(cmd))
-				continue
-
 		modCache.get(cmd).main(params.get(cmd))
 
 
