@@ -79,5 +79,12 @@ def main(argString=''):
 
 
 if __name__ == '__main__':
+
+	print('\n'*3)
+	print('1.买涨不买跌，深跌长影是最佳')
+	print('2.下跌2%坚决卖')
+	print('3.买卖分批次(111223)、有间隔(>5%)')
+	print('4.')
+	print()
 	main()
 
