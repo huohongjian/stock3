@@ -46,7 +46,7 @@ def main(argString=''):
 			amount 	= (v.get('volume') - p.get('volume', 0)) / 10000
 			bid		= v.get('buy')
 			ask		= v.get('sell')
-			if volume>1000 or amount>10000:
+			if volume>10 or amount>10:
 				i += 1
 				if i%10 == 1:
 					print(Back.BLUE, header, '', Style.RESET_ALL)
